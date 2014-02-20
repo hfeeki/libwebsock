@@ -51,10 +51,11 @@ int
 onmessage(libwebsock_client_state *state, libwebsock_message *msg)
 {
   fprintf(stderr, "Received message from client: %d\n", state->sockfd);
+  fprintf(stderr, "Uri: %s\n", state->uri);
   fprintf(stderr, "Message opcode: %d\n", msg->opcode);
   fprintf(stderr, "Payload Length: %llu\n", msg->payload_len);
   fprintf(stderr, "Payload: %s\n", msg->payload);
-  //now let's send it back.
+  // now let's send it back.
   libwebsock_send_text(state, msg->payload);
   return 0;
 }

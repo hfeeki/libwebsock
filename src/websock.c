@@ -566,6 +566,9 @@ libwebsock_pthread_onclose(void *arg)
 void
 libwebsock_handshake_finish(struct bufferevent *bev, libwebsock_client_state *state)
 {
+  char *method;
+  char *uri;
+
   //TODO: this is shite.  Clean it up.
   libwebsock_context *ctx = (libwebsock_context *) state->ctx;
   libwebsock_string *str = state->data;
@@ -574,7 +577,7 @@ libwebsock_handshake_finish(struct bufferevent *bev, libwebsock_client_state *st
   char sha1buf[45];
   char concat[1024];
   unsigned char sha1mac[20];
-  char *tok = NULL, *headers = NULL, *key = NULL;
+  char *tok = NULL, *headers = NULL, *key = NULL, *hdr = NULL;
   char *base64buf = NULL;
   const char *GID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
   SHA1Context shactx;
@@ -583,8 +586,32 @@ libwebsock_handshake_finish(struct bufferevent *bev, libwebsock_client_state *st
 
   output = bufferevent_get_output(bev);
 
+  // Note: this need to free
+  hdr = (char *) lws_calloc(str->data_sz + 1);
+  strncpy(hdr, str->data, str->idx);
+  
+  char *line = strsep(&hdr, "\r\n");
+  // printf("%s\n", line);
+
+  method = strsep(&line, " ");
+  // printf("%s\n", method);
+  if (line != NULL) {
+    uri = strsep(&line, " ");
+    // printf("%s\n", uri);
+    if (line != NULL) {
+      state->uri = (char *) lws_malloc(strlen(uri)+1);
+      memset(state->uri, 0, strlen(uri)+1);
+      strncpy(state->uri, uri, strlen(uri));
+      // printf("uri: %s\n", uri);
+    }
+  }
+  // Note: next will cause coredown
+  // free(hdr);
+  
   headers = (char *) lws_calloc(str->data_sz + 1);
   strncpy(headers, str->data, str->idx);
+
+  // printf("%s\n", headers);
   for (tok = strtok(headers, "\r\n"); tok != NULL; tok = strtok(NULL, "\r\n")) {
     if (strstr(tok, "Sec-WebSocket-Key: ") != NULL) {
       key = (char *) lws_malloc(strlen(tok));
